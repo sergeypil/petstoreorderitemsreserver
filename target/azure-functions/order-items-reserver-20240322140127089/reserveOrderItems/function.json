@@ -1,0 +1,15 @@
+{
+  "scriptFile" : "../orderitemsreserver-1.0-SNAPSHOT.jar",
+  "entryPoint" : "net.serg.petstoreapp.OrderItemsReserver.run",
+  "bindings" : [ {
+    "type" : "httpTrigger",
+    "direction" : "in",
+    "name" : "req",
+    "methods" : [ "POST" ],
+    "authLevel" : "ANONYMOUS"
+  }, {
+    "type" : "http",
+    "direction" : "out",
+    "name" : "$return"
+  } ]
+}
