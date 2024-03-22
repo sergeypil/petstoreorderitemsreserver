@@ -1,4 +1,2 @@
-net\serg\petstoreapp\Order.class
 net\serg\petstoreapp\OrderItemsReserver.class
-net\serg\petstoreapp\Order$StatusEnum.class
-net\serg\petstoreapp\Product.class
+net\serg\petstoreapp\SessionData.class
