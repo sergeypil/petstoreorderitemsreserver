@@ -1,5 +1,7 @@
 package net.serg.petstoreapp;
 
+import com.azure.core.http.policy.ExponentialBackoffOptions;
+import com.azure.core.http.policy.RetryOptions;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobContainerClientBuilder;
@@ -17,7 +19,10 @@ import com.microsoft.azure.functions.annotation.ServiceBusQueueTrigger;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Optional;
+
+import static java.lang.Boolean.TRUE;
 
 public class OrderItemsReserver {
     private static final String connectionString = "***";
@@ -28,7 +33,7 @@ public class OrderItemsReserver {
         @ServiceBusQueueTrigger(
             name = "sessionData",
             queueName = "PetStoreQueue",
-            connection = "SERVICE_BUS_CONNECTION_STRING") //env variable
+            connection = "SERVICE_BUS_CONNECTION_STRING") // env variable
         SessionData sessionData,
         final ExecutionContext context) {
 
@@ -36,16 +41,30 @@ public class OrderItemsReserver {
         context.getLogger().info("Received sessionData: " + sessionData);
 
         try {
+            if (1 == 1) {
+                throw new RuntimeException("An error occurred while reserving order items.");
+            }
             String orderJson = sessionData.getOrderJson();
 
-            BlobContainerClientBuilder blobContainerClientBuilder = new BlobContainerClientBuilder();
-            BlobContainerClient blobContainerClient = blobContainerClientBuilder.connectionString(connectionString).containerName(blobContainerName).buildClient();
-            BlobClient blobClient = blobContainerClient.getBlobClient(sessionData.getSessionId() + ".json");
+            ExponentialBackoffOptions exponentialOptions = new ExponentialBackoffOptions()
+                .setMaxRetries(3)
+                .setBaseDelay(Duration.ofSeconds(1))
+                .setMaxDelay(Duration.ofSeconds(10));
 
+            RetryOptions retryOptions = new RetryOptions(exponentialOptions);
+
+            BlobContainerClientBuilder blobContainerClientBuilder = new BlobContainerClientBuilder();
+            BlobContainerClient blobContainerClient = blobContainerClientBuilder
+                .connectionString(connectionString)
+                .containerName(blobContainerName)
+                .retryOptions(retryOptions)
+                .buildClient();
+
+            BlobClient blobClient = blobContainerClient.getBlobClient(sessionData.getSessionId() + ".json");
             if (blobClient.exists()) {
                 blobClient.delete();  // Delete blob if it already exists
             }
-            
+
             // Create new blob and upload JSON data
             BlobClient newBlobClient = blobContainerClient.getBlobClient(sessionData.getSessionId() + ".json");
             newBlobClient.upload(new ByteArrayInputStream(orderJson.getBytes(StandardCharsets.UTF_8)), orderJson.length());
@@ -53,6 +72,7 @@ public class OrderItemsReserver {
 
         } catch (Exception e) {
             context.getLogger().severe("Error processing request: " + e.getMessage());
+            throw e;
         }
     }
 }
