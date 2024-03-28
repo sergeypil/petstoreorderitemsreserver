@@ -22,8 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Optional;
 
-import static java.lang.Boolean.TRUE;
-
 public class OrderItemsReserver {
     private static final String connectionString = "***";
     private static final String blobContainerName = "order-items-reserver";
@@ -41,9 +39,6 @@ public class OrderItemsReserver {
         context.getLogger().info("Received sessionData: " + sessionData);
 
         try {
-            if (1 == 1) {
-                throw new RuntimeException("An error occurred while reserving order items.");
-            }
             String orderJson = sessionData.getOrderJson();
 
             ExponentialBackoffOptions exponentialOptions = new ExponentialBackoffOptions()
@@ -72,7 +67,6 @@ public class OrderItemsReserver {
 
         } catch (Exception e) {
             context.getLogger().severe("Error processing request: " + e.getMessage());
-            throw e;
         }
     }
 }
